@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steal a Brainrot Challenge Wheel</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Roboto:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #ffde00;
+            --secondary-color: #ff3333;
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --wheel-border: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Bangers', cursive;
+            font-size: 3rem;
+            letter-spacing: 2px;
+            color: var(--primary-color);
+            text-shadow: 3px 3px 0px var(--secondary-color);
+            margin: 0;
+        }
+
+        p.subtitle {
+            font-size: 1.2rem;
+            color: #ccc;
+            margin-top: 5px;
+        }
+
+        /* Wheel Container */
+        .game-container {
+            position: relative;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .wheel-wrapper {
+            position: relative;
+            padding: 15px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(0,0,0,0.4));
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(0,0,0,0.6), inset 0 0 20px rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        canvas {
+            display: block;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        /* Pointer */
+        .pointer {
+            position: absolute;
+            top: 50%;
+            right: -25px;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 60px;
+            z-index: 10;
+            filter: drop-shadow(4px 4px 4px rgba(0,0,0,0.6));
+        }
+
+        /* Spin Button */
+        #spinBtn {
+            margin-top: 30px;
+            padding: 15px 50px;
+            font-family: 'Bangers', cursive;
+            font-size: 2rem;
+            color: white;
+            background: linear-gradient(45deg, #ff3333, #ff6600);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #990000, 0 10px 10px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+            text-transform: uppercase;
+        }
+
+        #spinBtn:active {
+            transform: translateY(5px);
+            box-shadow: 0 0 0 #990000, 0 2px 2px rgba(0,0,0,0.3);
+        }
+
+        #spinBtn:disabled {
+            background: #555;
+            box-shadow: none;
+            cursor: not-allowed;
+            color: #999;
+        }
+
+        /* Result Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2b1055, #7597de);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            border: 4px solid var(--primary-color);
+            box-shadow: 0 0 50px rgba(255, 222, 0, 0.6);
+            max-width: 90%;
+            width: 450px;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal h2 {
+            font-family: 'Bangers', cursive;
+            font-size: 2.5rem;
+            margin: 0 0 10px 0;
+            color: var(--primary-color);
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .result-text {
+            font-size: 2rem;
+            margin: 10px 0;
+            font-weight: bold;
+            font-family: 'Bangers', cursive;
+            color: #fff;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .result-image {
+            width: 200px;
+            height: 200px;
+            object-fit: contain;
+            margin: 15px auto;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border: 2px dashed rgba(255,255,255,0.3);
+        }
+
+        .rarity-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #333;
+            border-radius: 15px;
+            color: #ffde00;
+            font-weight: bold;
+            margin-top: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .close-btn {
+            padding: 10px 30px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            font-family: 'Bangers', cursive;
+            margin-top: 20px;
+            box-shadow: 0 4px 0 #990000;
+        }
+
+        .close-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #990000;
+        }
+
+        /* Confetti Canvas */
+        #confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 99;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Steal a Brainrot</h1>
+        <p class="subtitle">Spin the Wheel & Accept the Challenge!</p>
+    </header>
+
+    <div class="game-container">
+        <div class="wheel-wrapper">
+            <!-- The pointer (Triangle) -->
+            <svg class="pointer" viewBox="0 0 50 50">
+                <path d="M 50 25 L 0 0 L 0 50 Z" fill="#ffffff" stroke="#000" stroke-width="2"/>
+            </svg>
+            <canvas id="wheelCanvas" width="550" height="550"></canvas>
+        </div>
+        
+        <button id="spinBtn" onclick="spinWheel()">SPIN!</button>
+    </div>
+
+    <!-- Result Modal -->
+    <div id="resultModal" class="modal">
+        <div class="modal-content">
+            <h2>YOU MUST STEAL:</h2>
+            <img id="modalImage" class="result-image" src="" alt="Brainrot Character">
+            <div id="modalText" class="result-text"></div>
+            <div id="modalRarity" class="rarity-badge"></div>
+            <br>
+            <button class="close-btn" onclick="closeModal()">SPIN AGAIN</button>
+        </div>
+    </div>
+
+    <canvas id="confetti"></canvas>
+
+<script>
+    // --- TOP 10 BRAINROTS CONFIGURATION ---
+    // UPDATED WITH FILES FROM YOUR GITHUB UPLOAD
+    const sectors = [
+        { 
+            color: "#FF6B6B", 
+            label: "Strawberry Elephant", 
+            url: "Strawberry Elephant.webp", 
+            rarity: "OG RARE ($500B)" 
+        },
+        { 
+            color: "#4ECDC4", 
+            label: "Dragon Cannelloni", 
+            url: "Dragon Cannelloni.png", 
+            rarity: "SECRET ($100B)" 
+        },
+        { 
+            color: "#FFE66D", 
+            label: "Spaghetti Tualetti", 
+            url: "Spaghetti Tualetti.webp", 
+            rarity: "SECRET ($15B)" 
+        },
+        { 
+            color: "#1A535C", 
+            label: "Garama & Madundung", 
+            url: "Garama and Madundung.webp", 
+            rarity: "SECRET ($10B)" 
+        },
+        { 
+            color: "#FF9F1C", 
+            label: "Ketchuru & Musturu", 
+            url: "Ketchuru and Musturu.webp", 
+            rarity: "SECRET ($7.5B)" 
+        },
+        { 
+            color: "#2E294E", 
+            label: "La Supreme Combo", 
+            url: "La Supreme Combinasion.webp", 
+            rarity: "SECRET ($7B)" 
+        },
+        { 
+            color: "#D90368", 
+            label: "Los Bros", 
+            url: "Los Bros.webp", 
+            rarity: "SECRET ($6B)" 
+        },
+        { 
+            color: "#00A896", 
+            label: "Ketupat Kepat", 
+            url: "Ketupat Kepat.webp", 
+            rarity: "SECRET ($5B)" 
+        },
+        { 
+            color: "#540D6E", 
+            label: "Brr Brr Patapem", 
+            url: "Brr_Brr_Patapem.webp", 
+            rarity: "SECRET ($3B)" 
+        },
+        { 
+            color: "#FFD166", 
+            label: "Los Hotspotsitos", 
+            url: "Los Hotspotsitos.webp", 
+            rarity: "SECRET ($3B)" 
+        }
+    ];
+
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const dia = canvas.width;
+    const rad = dia / 2;
+    const PI = Math.PI;
+    const TAU = 2 * PI;
+    const arc = TAU / sectors.length;
+
+    let angVel = 0; 
+    let ang = 0; 
+    let isSpinning = false;
+    let spinFrame = null;
+    let lastSectorIndex = -1;
+
+    const friction = 0.992; // Slightly longer spin
+
+    // Preload Images
+    let loadedImages = 0;
+    sectors.forEach(sector => {
+        const img = new Image();
+        img.src = sector.url;
+        img.onload = () => {
+            loadedImages++;
+            sector.imgObject = img;
+            if (loadedImages === sectors.length) {
+                initialize();
+            }
+        };
+        // Fallback if image fails (keep text working)
+        img.onerror = () => {
+            loadedImages++;
+            if (loadedImages === sectors.length) initialize();
+        };
+    });
+
+    // --- AUDIO SYSTEM ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new AudioContext();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playTick() {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    function playWinSound() {
+        if (!audioCtx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; 
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            const startTime = audioCtx.currentTime + (i * 0.1);
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 1.5);
+            osc.start(startTime);
+            osc.stop(startTime + 1.5);
+        });
+    }
+
+    // --- WHEEL LOGIC ---
+
+    const getIndex = () => Math.floor(sectors.length - (ang / TAU) * sectors.length) % sectors.length;
+
+    function drawSector(sector, i) {
+        const ang = arc * i;
+        ctx.save();
+        
+        // Draw Slice
+        ctx.beginPath();
+        ctx.fillStyle = sector.color;
+        ctx.moveTo(rad, rad);
+        ctx.arc(rad, rad, rad, ang, ang + arc);
+        ctx.lineTo(rad, rad);
+        ctx.fill();
+        ctx.stroke();
+
+        // Translate to center of sector
+        ctx.translate(rad, rad);
+        ctx.rotate(ang + arc / 2);
+        
+        // Draw Image (if available) or Fallback Text
+        if (sector.imgObject && sector.imgObject.complete) {
+            // Clip round image or draw as is? Let's draw it square-ish near the rim
+            ctx.save();
+            ctx.translate(rad - 85, -35); // Position image
+            // Rotate back slightly if needed, or keep aligned with wedge
+            ctx.drawImage(sector.imgObject, 0, 0, 70, 70); 
+            ctx.restore();
+        } 
+
+        // Draw Text
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 16px Roboto";
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.shadowBlur = 4;
+        
+        // Wrap text logic mostly for clean display
+        const textParts = sector.label.split(' ');
+        if(textParts.length > 1) {
+             ctx.fillText(textParts[0], rad - 100, -5);
+             ctx.fillText(textParts.slice(1).join(' '), rad - 100, 15);
+        } else {
+             ctx.fillText(sector.label, rad - 100, 5);
+        }
+
+        ctx.restore();
+    }
+
+    function rotate() {
+        const sector = sectors[getIndex()];
+        const currentIndex = getIndex();
+        
+        if (isSpinning && currentIndex !== lastSectorIndex) {
+            playTick();
+            lastSectorIndex = currentIndex;
+        }
+
+        canvas.style.transform = `rotate(${ang - PI / 2}rad)`;
+        
+        if (!isSpinning) return;
+
+        if (angVel >= 0.001) {
+            angVel *= friction; 
+            ang += angVel;
+            ang %= TAU; 
+            spinFrame = requestAnimationFrame(rotate);
+        } else {
+            isSpinning = false;
+            angVel = 0;
+            cancelAnimationFrame(spinFrame);
+            document.getElementById('spinBtn').disabled = false;
+            showResult(sector);
+        }
+    }
+
+    function initialize() {
+        sectors.forEach(drawSector);
+        rotate();
+    }
+
+    function spinWheel() {
+        if (isSpinning) return;
+        initAudio();
+        isSpinning = true;
+        document.getElementById('spinBtn').disabled = true;
+        angVel = Math.random() * 0.25 + 0.35; // Slightly faster start
+        rotate();
+    }
+
+    function showResult(sector) {
+        playWinSound();
+
+        const modal = document.getElementById('resultModal');
+        const text = document.getElementById('modalText');
+        const img = document.getElementById('modalImage');
+        const rarity = document.getElementById('modalRarity');
+        
+        text.innerText = sector.label;
+        img.src = sector.url;
+        rarity.innerText = sector.rarity;
+        
+        modal.style.display = 'flex';
+        startConfetti();
+    }
+
+    function closeModal() {
+        document.getElementById('resultModal').style.display = 'none';
+        stopConfetti();
+    }
+
+    // --- CONFETTI ---
+    const confettiCanvas = document.getElementById("confetti");
+    const cCtx = confettiCanvas.getContext("2d");
+    let confettiAnimation;
+    let particles = [];
+
+    confettiCanvas.width = window.innerWidth;
+    confettiCanvas.height = window.innerHeight;
+
+    function startConfetti() {
+        particles = [];
+        for(let i=0; i<100; i++) {
+            particles.push({
+                x: Math.random() * confettiCanvas.width,
+                y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                color: `hsl(${Math.random()*360}, 100%, 50%)`,
+                size: Math.random() * 10 + 5,
+                speed: Math.random() * 5 + 2
+            });
+        }
+        animateConfetti();
+    }
+
+    function animateConfetti() {
+        cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+        particles.forEach((p, index) => {
+            p.y += p.speed;
+            if(p.y > confettiCanvas.height) p.y = -10;
+            cCtx.fillStyle = p.color;
+            cCtx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        confettiAnimation = requestAnimationFrame(animateConfetti);
+    }
+
+    function stopConfetti() {
+        cancelAnimationFrame(confettiAnimation);
+        cCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    }
+
+    window.addEventListener('resize', () => {
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
+    });
+
+</script>
+
+</body>
+</html>
